@@ -1,4 +1,4 @@
-package com.pramati.supportclass;
+package com.pramati.utils;
 
 import java.io.File;
 import java.io.IOException;

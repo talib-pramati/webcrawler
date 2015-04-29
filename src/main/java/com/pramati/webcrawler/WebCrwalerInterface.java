@@ -1,4 +1,4 @@
-package com.pramati.supportclass;
+package com.pramati.webcrawler;
 
 public interface WebCrwalerInterface {
 

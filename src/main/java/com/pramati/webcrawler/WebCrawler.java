@@ -1,4 +1,4 @@
-package com.pramati.supportclass;
+package com.pramati.webcrawler;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -7,11 +7,19 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import java.util.logging.Logger;
 
 import org.jsoup.nodes.Element;
 
+import com.pramati.constant.CrawlerConstants;
+import com.pramati.downloader.LinkCrawler;
+import com.pramati.downloader.MailTextDownloader;
+import com.pramati.utils.FileManager;
+
 public class WebCrawler implements WebCrwalerInterface {
 
+	Logger logger = Logger.getLogger(CrawlerConstants.LOGGER_NAME);
 	/*
 	 * visitedLinks maintains a group of unique url which is extracted from the
 	 * different pages.
@@ -30,16 +38,21 @@ public class WebCrawler implements WebCrwalerInterface {
 	 */
 	private final Queue<String> pageContainsNoLink = new ConcurrentLinkedQueue<String>();
 
-	private final FileManager handleFile = new FileManager();
+	private final FileManager fileManager = new FileManager();
 	private ExecutorService executor;
 	private String url;
-
-	public WebCrawler(String startingURL, int maximum_threads) {
+	private int year;
+	public WebCrawler(String startingURL, int year,int maximum_threads) {
 		this.url = startingURL;
 		executor = Executors.newFixedThreadPool(maximum_threads);
+		this.year = year;
 
 	}
 
+	public int getYear()
+	{
+		return year;
+	}
 	public Queue<String> getQueContainsUniqueURL() {
 		return queContainsUniqueURL;
 	}
@@ -53,6 +66,7 @@ public class WebCrawler implements WebCrwalerInterface {
 	}
 
 	public void startCrawling() {
+		logger.info("Started crawling...");
 		queContainsUniqueURL.offer(url);
 		startLinkDownloaderThread();
 	}
@@ -72,11 +86,11 @@ public class WebCrawler implements WebCrwalerInterface {
 
 	public void startLinkDownloaderThread() {
 
-		executor.execute(new LinkDownloader(this));
+		executor.execute(new LinkCrawler(this));
 	}
 
 	public void startMailTextDownloaderThread() {
-		executor.execute(new MailTextDownloader(this, handleFile));
+		executor.execute(new MailTextDownloader(this, fileManager));
 	}
 
 	@Override
@@ -100,17 +114,6 @@ public class WebCrawler implements WebCrwalerInterface {
 		return this.visitedLinks;
 	}
 
-	public void shutDownExecutorService() {
-		if (queContainsUniqueURL.isEmpty() && pageContainsNoLink.isEmpty()) {
-			List<Runnable> shutdownNow = executor.shutdownNow();
-			Iterator<Runnable> iterator = shutdownNow.iterator();
-
-			while (iterator.hasNext()) {
-				System.out.println("This thread class running"
-						+ iterator.next().getClass());
-			}
-		}
-	}
 
 	public void enqueue(Element element) {
 
@@ -121,6 +124,44 @@ public class WebCrawler implements WebCrwalerInterface {
 
 		}
 
+	}
+	
+	public boolean doesMoreTaskExist()
+	{
+		System.out.println("que size = " + queContainsUniqueURL.size());
+		System.out.println("page size = " + pageContainsNoLink.size());
+		if(pageContainsNoLink.size() == 0 &&
+				queContainsUniqueURL.size() == 0)
+		{
+			return false;
+		}
+		
+		return true;
+	}
+	
+	public void shutDownExecutorService()
+	{
+		logger.info("Executor service shutdown called...");
+		List<Runnable> shutdownNow = executor.shutdownNow();
+		System.out.println("shut down size " + shutdownNow.size());
+	}
+
+	public boolean waitingForTaskCompletion()throws InterruptedException {
+		
+	return executor.awaitTermination(CrawlerConstants.MAX_WAITING_TIME, TimeUnit.SECONDS);
+	/*while(true)
+	{
+		if(executor.isTerminated())
+		{
+			logger.info("yes we are done");
+			break;
+		}
+		else
+		{
+			logger.info("running");
+		}
+	}*/
+	
 	}
 
 }
