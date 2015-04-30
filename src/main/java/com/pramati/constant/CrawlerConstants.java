@@ -8,5 +8,7 @@ public class CrawlerConstants {
 	public static String DATE_FORMAT = "yyyyMMdd_HHmmss-SSS";
 	public static String EXTENSION = ".text";
 	public static String LOGGER_NAME = "webcrawlerLogger";
-	public static long MAX_WAITING_TIME = 60;
+	public static long MAX_WAITING_TIME = 180;
+	public static String RECOVERY_DIRECTORY_NAME = "recoveryfiles";
+	public static String RECOVERYFILENAMEAPPENDER = "webcrawlerRecovery";
 }

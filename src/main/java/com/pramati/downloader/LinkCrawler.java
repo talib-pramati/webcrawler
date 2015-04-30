@@ -1,6 +1,10 @@
 package com.pramati.downloader;
 
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileWriter;
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.net.SocketTimeoutException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -13,14 +17,16 @@ import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 
 import com.pramati.constant.CrawlerConstants;
+import com.pramati.utils.FileManager;
 import com.pramati.webcrawler.WebCrawler;
 
 public class LinkCrawler implements Runnable {
 
 	private WebCrawler webCrawler;
+	private FileManager fileManager;
 	Logger logger = Logger.getLogger(CrawlerConstants.LOGGER_NAME);
 
-	public LinkCrawler(WebCrawler webCrawler) {
+	public LinkCrawler(WebCrawler webCrawler,FileManager fileManager) {
 		this.webCrawler = webCrawler;
 	}
 
@@ -71,11 +77,42 @@ public class LinkCrawler implements Runnable {
 
 		else {
 			for (Element element : urls) {
-				webCrawler.enqueue(element);
+				//webCrawler.enqueue(element);
+				if (!webCrawler.isContainsURL(element.attr("abs:href"))) {
+					webCrawler.getQueContainsUniqueURL().offer(element.attr("abs:href"));
+					webCrawler.getVisitedLinks().add(element.attr("abs:href"));
+					writeIntoRecoveryFile(element.attr("abs:href"),webCrawler.getYear());
+					webCrawler.startNewLinkDownloaderThread();
+				}
 				
 			}
 		}
 
+	}
+
+	private void writeIntoRecoveryFile(String url, int year) throws IOException {
+		
+		Logger logger = Logger.getLogger(CrawlerConstants.LOGGER_NAME);
+		
+		String name = CrawlerConstants.RECOVERYFILENAMEAPPENDER + "_" + year + CrawlerConstants.EXTENSION;
+		File dir = new File(CrawlerConstants.RECOVERY_DIRECTORY_NAME);
+			
+		if (!dir.exists()) {
+			dir.mkdir();
+		}
+
+		File fileName = new File(dir, name);
+
+		if (!fileName.exists()) {
+			fileName.createNewFile();
+		}
+		
+		try(PrintWriter pw = new PrintWriter(new BufferedWriter(new FileWriter(fileName, true)))) {
+		    pw.println(url);
+		}catch (IOException e) {
+		    logger.log(Level.SEVERE, "Could not write into file : "+ fileName.getAbsolutePath());
+		}
+		
 	}
 
 }
