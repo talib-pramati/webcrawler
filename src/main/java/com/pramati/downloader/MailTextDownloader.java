@@ -27,8 +27,8 @@ public class MailTextDownloader implements Runnable {
 
 	@Override
 	public void run() {
-		if (!webCrawler.getPageContainsNoLink().isEmpty()) {
-			String url = webCrawler.getPageContainsNoLink().poll();
+		if (!webCrawler.getURLsContainingMailText().isEmpty()) {
+			String url = webCrawler.getURLsContainingMailText().poll();
 			Thread.currentThread().setPriority(Thread.MAX_PRIORITY);
 			try {
 

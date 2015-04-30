@@ -1,8 +1,5 @@
 package com.pramati.webcrawler;
 
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
 import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -38,7 +35,7 @@ public class WebCrawler implements WebCrwalerInterface {
 	 * This queue maintains url of the page which does not contain further
 	 * reference or href.
 	 */
-	private final Queue<String> pageContainsNoLink = new ConcurrentLinkedQueue<String>();
+	private final Queue<String> urlsContainingMailText = new ConcurrentLinkedQueue<String>();
 
 	private final FileManager fileManager = new FileManager();
 	private ExecutorService executor;
@@ -64,8 +61,8 @@ public class WebCrawler implements WebCrwalerInterface {
 		return queContainsUniqueURL;
 	}
 
-	public Queue<String> getPageContainsNoLink() {
-		return pageContainsNoLink;
+	public Queue<String> getURLsContainingMailText() {
+		return urlsContainingMailText;
 	}
 
 	public ExecutorService getExecutor() {
@@ -143,7 +140,7 @@ public class WebCrawler implements WebCrwalerInterface {
 
 	public boolean doesMoreTaskExist() {
 
-		if (pageContainsNoLink.size() == 0 && queContainsUniqueURL.size() == 0) {
+		if (urlsContainingMailText.size() == 0 && queContainsUniqueURL.size() == 0) {
 			return false;
 		}
 

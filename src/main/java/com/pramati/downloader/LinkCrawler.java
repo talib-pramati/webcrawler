@@ -70,7 +70,7 @@ public class LinkCrawler implements Runnable {
 		webCrawler.getVisitedLinks().add(url);
 
 		if (urls.isEmpty()) {
-			webCrawler.getPageContainsNoLink().offer(url);
+			webCrawler.getURLsContainingMailText().offer(url);
 			webCrawler.startMailTextDownloaderThread();
 
 		}
