@@ -10,6 +10,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 
 import org.jsoup.nodes.Element;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import com.pramati.constant.CrawlerConstants;
 import com.pramati.downloader.LinkCrawler;
@@ -45,6 +46,7 @@ public class WebCrawler implements WebCrwalerInterface {
 	/**
 	 * 
 	 */
+	@Autowired
 	private final FileManager fileManager = new FileManager(); // NOPMD by taliba on 5/5/15 11:35 AM
 	/**
 	 * 

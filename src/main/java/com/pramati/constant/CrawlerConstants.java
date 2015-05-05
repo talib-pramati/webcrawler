@@ -49,5 +49,9 @@ public class CrawlerConstants { // NOPMD by taliba on 5/5/15 12:04 PM
 	 * 
 	 */
 	public static final String ABSOLUTE_PATH_REFERENCE = "abs:href"; // NOPMD by taliba on 5/5/15 1:23 PM
+	/**
+	 * 
+	 */
+	public static final String CONFIGURATION_FILE_NAME = "config.properties"; // NOPMD by taliba on 5/5/15 4:59 PM
 	
 }
