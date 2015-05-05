@@ -15,34 +15,51 @@ import com.pramati.constant.CrawlerConstants;
 import com.pramati.downloader.LinkCrawler;
 import com.pramati.downloader.MailTextDownloader;
 import com.pramati.utils.FileManager;
-
+/**
+ * 
+ * @author taliba
+ *
+ */
 public class WebCrawler implements WebCrwalerInterface {
-
-	Logger logger = Logger.getLogger(CrawlerConstants.LOGGER_NAME);
-	/*
-	 * visitedLinks maintains a group of unique url which is extracted from the
-	 * different pages.
+	/**
+	 * 
 	 */
+	public static final Logger LOGGER = Logger.getLogger(CrawlerConstants.LOGGER_NAME);
+	/**
+     * visitedLinks maintains a group of unique url which is extracted from the
+	 * different pages.
+     */
 	private final Set<String> visitedLinks;
 
-	/*
+	/**
 	 * urls which are extracted from a web page and not present in visitedLinks
 	 * would be enqued here.
 	 */
-	private final Queue<String> queContainsUniqueURL = new ConcurrentLinkedQueue<String>();
+	private final Queue<String> queContainsUniqueURL = new ConcurrentLinkedQueue<String>(); // NOPMD by taliba on 5/5/15 11:35 AM
 
-	/*
+	/**
 	 * This queue maintains url of the page which does not contain further
 	 * reference or href.
 	 */
-	private final Queue<String> urlsContainingMailText = new ConcurrentLinkedQueue<String>();
+	private final Queue<String> urlsContainingMailText = new ConcurrentLinkedQueue<String>(); // NOPMD by taliba on 5/5/15 11:32 AM
+	/**
+	 * 
+	 */
+	private final FileManager fileManager = new FileManager(); // NOPMD by taliba on 5/5/15 11:35 AM
+	/**
+	 * 
+	 */
+	private ExecutorService executor; // NOPMD by taliba on 5/5/15 11:34 AM
+	/**
+	 * 
+	 */
+	final private String url; // NOPMD by taliba on 5/5/15 11:35 AM
+	/**
+	 * 
+	 */
+	final private int year;
 
-	private final FileManager fileManager = new FileManager();
-	private ExecutorService executor;
-	private String url;
-	private int year;
-
-	public WebCrawler(String startingURL, int year, int maximum_threads) {
+	public WebCrawler(String startingURL, int year,final int maximum_threads) { // NOPMD by taliba on 5/5/15 11:32 AM
 		this.url = startingURL;
 		executor = Executors.newFixedThreadPool(maximum_threads);
 		this.year = year;
@@ -52,112 +69,209 @@ public class WebCrawler implements WebCrwalerInterface {
 						+ CrawlerConstants.EXTENSION);
 
 	}
-
+	/**
+	 * 
+	 * @return
+	 */
 	public int getYear() {
 		return year;
 	}
-
+	/**
+	 * 
+	 * @return
+	 */
 	public Queue<String> getQueContainsUniqueURL() {
 		return queContainsUniqueURL;
 	}
-
+	/**
+	 * 
+	 * @return
+	 */
 	public Queue<String> getURLsContainingMailText() {
 		return urlsContainingMailText;
 	}
-
+	/**
+	 * 
+	 * @return
+	 */
 	public ExecutorService getExecutor() {
 		return executor;
 	}
-
+	/**
+	 * 
+	 */
 	public void startCrawling() {
-		logger.info("Started crawling...");
+		LOGGER.info("Started crawling...");
 		queContainsUniqueURL.offer(url);
 		startLinkDownloaderThread();
 	}
-
+	/**
+	 * 
+	 */
 	@Override
 	public void startNewLinkDownloaderThread() {
 
 		startLinkDownloaderThread();
 
 	}
-
+	/**
+	 * 
+	 */
 	@Override
 	public void startNewMailTextDownloaderThread() {
 
 		startMailTextDownloaderThread();
 	}
-
+	/**
+	 * 
+	 */
 	public void startLinkDownloaderThread() {
 
 		try {
 			executor.execute(new LinkCrawler(this, fileManager));
 		} catch (RejectedExecutionException exc) {
-			logger.info("Rejecting further task submission, Shutdown already called.");
+			LOGGER.info("Rejecting further task submission, Shutdown already called.");
 		}
 	}
-
+	/**
+	 * 
+	 */
 	public void startMailTextDownloaderThread() {
 
 		try {
 			executor.execute(new MailTextDownloader(this, fileManager));
 		} catch (RejectedExecutionException exc) {
-			logger.info("Rejecting further task submission, Shutdown already called.");
+			LOGGER.info("Rejecting further task submission, Shutdown already called.");
 		}
 
 	}
-
+	/**
+	 * 
+	 */
 	@Override
-	public void addVisitedLinks(String url) {
+	public void addVisitedLinks(final String url) {
 
 		visitedLinks.add(url);
 	}
-
+	/**
+	 * 
+	 */
 	@Override
-	public Boolean isContainsURL(String url) {
+	public Boolean isContainsURL(final String url) {
 
-		boolean linkVisited = false;
+		boolean linkVisited;
 		synchronized (visitedLinks) {
-
-			linkVisited = visitedLinks.contains(url);
+			if (visitedLinks.contains(url)) {
+				linkVisited = true;
+			} else {
+				linkVisited = false;
+			}
 		}
 		return linkVisited;
 	}
-
+	/**
+	 * 
+	 * @return
+	 */
 	public Set<String> getVisitedLinks() {
 		return this.visitedLinks;
 	}
-
-	public void enqueue(Element element) {
+	/**
+	 * 
+	 * @param element
+	 */
+	public void enqueue(final Element element) {
 
 		if (!isContainsURL(element.attr("abs:href"))) {
-			getQueContainsUniqueURL().offer(element.attr("abs:href"));
+			queContainsUniqueURL.offer(element.attr("abs:href"));
 			visitedLinks.add(element.attr("abs:href"));
 			startNewLinkDownloaderThread();
 		}
 
 	}
-
+	/**
+	 * 
+	 * @return
+	 */
 	public boolean doesMoreTaskExist() {
 
+		boolean moreTaskExist;
 		if (urlsContainingMailText.size() == 0 && queContainsUniqueURL.size() == 0) {
-			return false;
+			moreTaskExist = false;
+		}		
+		else{
+			moreTaskExist = true;
 		}
 
-		return true;
+		return moreTaskExist;
 	}
-
+	/**
+	 * 
+	 */
 	public void shutDownExecutorService() {
-		logger.info("Executor service shutdown called...");
+		LOGGER.info("Executor service shutdown called...");
 		executor.shutdown();
 
 	}
-
+	/**
+	 * 
+	 * @return
+	 * @throws InterruptedException
+	 */
 	public boolean waitingForTaskCompletion() throws InterruptedException {
 
 		return executor.awaitTermination(CrawlerConstants.MAX_WAITING_TIME,
 				TimeUnit.SECONDS);
 
+	}
+	
+	/**
+	 * 
+	 * @return
+	 */
+	public boolean isQueContainsUniqueURLEmpty()
+	{
+		return queContainsUniqueURL.isEmpty();
+	}
+	/**
+	 * 
+	 * @return
+	 */
+	public String pollQueContainsUniqueURL()
+	{
+		return queContainsUniqueURL.poll();
+	}
+	/**
+	 * 
+	 * @param url
+	 */
+	public void offerURLsContainingMailText(final String url)
+	{
+		urlsContainingMailText.offer(url);
+	}
+	/**
+	 * 
+	 * @param url
+	 */
+	public void offerQueContainsUniqueURL(final String url)
+	{
+		queContainsUniqueURL.offer(url);
+	}
+	/**
+	 * 
+	 * @return
+	 */
+	public boolean isURLsContainingMailTextEmpty()
+	{
+		return urlsContainingMailText.isEmpty();
+	}
+	/**
+	 * 
+	 * @return
+	 */
+	public String pollURLsContainingMailText()
+	{
+		return urlsContainingMailText.poll();
 	}
 
 }

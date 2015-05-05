@@ -2,13 +2,28 @@ package com.pramati.utils;
 
 import java.io.File;
 import java.io.IOException;
-
+/**
+ * 
+ * @author taliba
+ *
+ */
 public interface FileManagerInterface {
-
-	public File creataeFile() throws IOException;
-
-	public String generateUniqueFileName();
-
-	public void writeIntoFile(File fileName, String text);
+	/**
+	 * 
+	 * @return
+	 * @throws IOException
+	 */
+	File creataeFile() throws IOException;
+	/**
+	 * 
+	 * @return
+	 */
+	String generateUniqueFileName();
+	/**
+	 * 
+	 * @param fileName
+	 * @param text
+	 */
+	void writeIntoFile(File fileName, String text);
 
 }

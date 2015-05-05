@@ -1,13 +1,28 @@
 package com.pramati.webcrawler;
-
+/**
+ * 
+ * @author taliba
+ *
+ */
 public interface WebCrwalerInterface {
-
-	public void addVisitedLinks(String url);
-
-	public Boolean isContainsURL(String url);
-
-	public void startNewLinkDownloaderThread();
-
-	public void startNewMailTextDownloaderThread();
+	/**
+	 * 
+	 * @param url
+	 */
+	 void addVisitedLinks(String url);
+	/**
+	 * 
+	 * @param url
+	 * @return
+	 */
+	 Boolean isContainsURL(String url);
+	/**
+	 * 
+	 */
+	 void startNewLinkDownloaderThread();
+	/**
+	 * 
+	 */
+	 void startNewMailTextDownloaderThread();
 
 }

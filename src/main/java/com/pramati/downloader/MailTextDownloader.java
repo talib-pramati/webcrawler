@@ -13,57 +13,106 @@ import org.jsoup.nodes.Element;
 import com.pramati.constant.CrawlerConstants;
 import com.pramati.utils.FileManager;
 import com.pramati.webcrawler.WebCrawler;
-
+/**
+ * 
+ * @author taliba
+ *
+ */
 public class MailTextDownloader implements Runnable {
-
-	private WebCrawler webCrawler;
-	private FileManager fileManager;
-	Logger logger = Logger.getLogger(CrawlerConstants.LOGGER_NAME);
-
-	public MailTextDownloader(WebCrawler webCrawler, FileManager handleFile) {
+	/**
+	 * 
+	 */
+	private final WebCrawler webCrawler;
+	/**
+	 * 
+	 */
+	private final FileManager fileManager;
+	/**
+	 * 
+	 */
+	public static final Logger LOGGER = Logger.getLogger(CrawlerConstants.LOGGER_NAME);
+	/**
+	 * 
+	 * @param webCrawler
+	 * @param handleFile
+	 */
+	public MailTextDownloader(final WebCrawler webCrawler, final FileManager handleFile) {
 		this.webCrawler = webCrawler;
 		this.fileManager = handleFile;
 	}
-
+	/**
+	 * 
+	 */
 	@Override
 	public void run() {
-		if (!webCrawler.getURLsContainingMailText().isEmpty()) {
-			String url = webCrawler.getURLsContainingMailText().poll();
+		if (webCrawler.isURLsContainingMailTextEmpty()) {
+
+			if (!webCrawler.doesMoreTaskExist()) {
+				webCrawler.shutDownExecutorService();
+			}
+		}
+
+		else {
+
+			final String url = webCrawler.pollURLsContainingMailText();
 			Thread.currentThread().setPriority(Thread.MAX_PRIORITY);
 			try {
 
-				Document doc = Jsoup.connect(url).ignoreContentType(true).get();
-				Element text = doc.body();
+				final Document doc = Jsoup.connect(url).ignoreContentType(true).get();
+				final Element text = doc.body();
 				saveMailText(text.text());
 
 			} catch (IllegalArgumentException exc) {
-				logger.log(Level.WARNING, "Invalid url found " + url);
+				if (LOGGER.isLoggable(Level.WARNING)) {
+
+					LOGGER.log(Level.WARNING, "Invalid url found " + url);
+
+				}
 			} catch (SocketTimeoutException ex) {
 
-				logger.info("Server is overloaded...");
-			} catch (IOException e) {
+				LOGGER.info("Server is overloaded...");
+			} catch (IOException exc) {
 
-				logger.log(Level.SEVERE, "IOException has occured");
-				e.printStackTrace();
+				LOGGER.log(Level.SEVERE, "IOException has occured",exc);
+				
 			}
 
 			webCrawler.startNewMailTextDownloaderThread();
 
 		}
-		
-		else
-		{
-			if(!webCrawler.doesMoreTaskExist())
-			{
-				webCrawler.shutDownExecutorService();
-			}
-		}
 
 	}
-
-	public void saveMailText(String mailText) throws IOException {
-		File file = fileManager.creataeFile();
+	/**
+	 * 
+	 * @param mailText
+	 * @throws IOException
+	 */
+	public void saveMailText(final String mailText) throws IOException {
+		final File file = fileManager.creataeFile();
 		fileManager.writeIntoFile(file, mailText);
+	}
+
+	
+	/**
+	 * 
+	 * @return
+	 */
+	public WebCrawler getWebCrawler() {
+		return webCrawler;
+	}
+	/**
+	 * 
+	 * @return
+	 */
+	public FileManager getFileManager() {
+		return fileManager;
+	}
+	/**
+	 * 
+	 * @return
+	 */
+	public Logger getLogger() {
+		return LOGGER;
 	}
 
 }

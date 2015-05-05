@@ -1,6 +1,7 @@
 package com.pramati.downloader;
 
 import java.io.BufferedWriter;
+
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -8,9 +9,6 @@ import java.io.PrintWriter;
 import java.net.SocketTimeoutException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-
-import javax.swing.text.html.HTMLDocument.HTMLReader.IsindexAction;
-
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
@@ -19,68 +17,99 @@ import org.jsoup.select.Elements;
 import com.pramati.constant.CrawlerConstants;
 import com.pramati.utils.FileManager;
 import com.pramati.webcrawler.WebCrawler;
-
+/**
+ * 
+ * @author taliba
+ *
+ */
 public class LinkCrawler implements Runnable {
 
-	private WebCrawler webCrawler;
-	private FileManager fileManager;
-	Logger logger = Logger.getLogger(CrawlerConstants.LOGGER_NAME);
-
-	public LinkCrawler(WebCrawler webCrawler,FileManager fileManager) {
+	/**
+	 * 
+	 */
+	private final WebCrawler webCrawler;
+	/**
+	 * 
+	 */
+	private final FileManager fileManager;
+	/**
+	 * 
+	 */
+	protected  final static Logger LOGGER = Logger.getLogger(CrawlerConstants.LOGGER_NAME);
+	/**
+	 * 
+	 * @param webCrawler
+	 * @param fileManager
+	 */
+	public LinkCrawler(final WebCrawler webCrawler,final FileManager fileManager) {
 		this.webCrawler = webCrawler;
+		this.fileManager = fileManager;
 	}
 
 	@Override
 	public void run() {
 
-		if (!webCrawler.getQueContainsUniqueURL().isEmpty()) {
+		if (webCrawler.isQueContainsUniqueURLEmpty()) {
+			
+			if(!webCrawler.doesMoreTaskExist())
+			{
+				webCrawler.shutDownExecutorService();
+			}
 
-			String url = webCrawler.getQueContainsUniqueURL().poll();
+		}
+		
+		else
+		{
+			
+			final String url = webCrawler.pollQueContainsUniqueURL();
 			
 			try {
 
 				downLoadLink(url);
 			} catch (IllegalArgumentException exc) {
-				logger.log(Level.WARNING, "Invalid url found " + url);
+				
+				if(LOGGER.isLoggable(Level.WARNING)){
+					
+					LOGGER.log(Level.WARNING, "Invalid url found " + url);
+				}
 			}
 
 			catch (SocketTimeoutException ex) {
-				logger.info("Server is overloaded...");
+				LOGGER.info("Server is overloaded...");
 			} catch (IOException e) {
 
-				logger.log(Level.SEVERE, "IOException has occured");
-				e.printStackTrace();
+				if(LOGGER.isLoggable(Level.SEVERE)){
+				
+				LOGGER.log(Level.SEVERE,"IOException has occured", e);
+				}
 			}
-		}
 		
-		else
-		{
-			if(!webCrawler.doesMoreTaskExist())
-			{
-				webCrawler.shutDownExecutorService();
-			}
 		}
 
 	}
+	/**
+	 * 
+	 * @param url
+	 * @throws IOException
+	 */
+	public void downLoadLink(final String url) throws IOException { // NOPMD by taliba on 5/5/15 12:56 PM
 
-	public void downLoadLink(String url) throws IOException {
-
-		Document document = Jsoup.connect(url).ignoreContentType(true).get();
-		Elements urls = document.select("a[href*=" + webCrawler.getYear() + "]");
-		webCrawler.getVisitedLinks().add(url);
+		final Document document = Jsoup.connect(url).ignoreContentType(true).get();
+		final Elements urls = document.select("a[href*=" + webCrawler.getYear() + "]");
+		webCrawler.addVisitedLinks(url);
 
 		if (urls.isEmpty()) {
-			webCrawler.getURLsContainingMailText().offer(url);
+			webCrawler.offerURLsContainingMailText(url);
 			webCrawler.startMailTextDownloaderThread();
 
 		}
 
 		else {
-			for (Element element : urls) {
+			for (final Element element : urls) {
 				//webCrawler.enqueue(element);
-				if (!webCrawler.isContainsURL(element.attr("abs:href"))) {
-					webCrawler.getQueContainsUniqueURL().offer(element.attr("abs:href"));
-					webCrawler.getVisitedLinks().add(element.attr("abs:href"));
+				if (!webCrawler.isContainsURL(element.attr(CrawlerConstants.ABSOLUTE_PATH_REFERENCE))) {
+					webCrawler.offerQueContainsUniqueURL(element.attr(CrawlerConstants.ABSOLUTE_PATH_REFERENCE));
+					webCrawler.addVisitedLinks(element.attr(CrawlerConstants.ABSOLUTE_PATH_REFERENCE));
 					writeIntoRecoveryFile(element.attr("abs:href"),webCrawler.getYear());
 					webCrawler.startNewLinkDownloaderThread();
 				}
@@ -89,30 +118,56 @@ public class LinkCrawler implements Runnable {
 		}
 
 	}
-
-	private void writeIntoRecoveryFile(String url, int year) throws IOException {
-		
-		Logger logger = Logger.getLogger(CrawlerConstants.LOGGER_NAME);
-		
-		String name = CrawlerConstants.RECOVERYFILENAMEAPPENDER + "_" + year + CrawlerConstants.EXTENSION;
-		File dir = new File(CrawlerConstants.RECOVERY_DIRECTORY_NAME);
+	/**
+	 * 
+	 * @param url
+	 * @param year
+	 * @throws IOException
+	 */
+	private void writeIntoRecoveryFile(final String url, final int year) throws IOException { // NOPMD by taliba on 5/5/15 12:56 PM
+				
+		final String fileName = CrawlerConstants.RECOVERYFILENAMEAPPENDER + "_" + year + CrawlerConstants.EXTENSION;
+		final File dir = new File(CrawlerConstants.RECOVERY_DIRECTORY_NAME);
 			
 		if (!dir.exists()) {
 			dir.mkdir();
 		}
 
-		File fileName = new File(dir, name);
+		final File file = new File(dir, fileName);
 
-		if (!fileName.exists()) {
-			fileName.createNewFile();
+		if (!file.exists()) {
+			file.createNewFile();
 		}
 		
-		try(PrintWriter pw = new PrintWriter(new BufferedWriter(new FileWriter(fileName, true)))) {
-		    pw.println(url);
+		try(PrintWriter printWriter = new PrintWriter(new BufferedWriter(new FileWriter(file, true)))) {
+		    printWriter.println(url);
 		}catch (IOException e) {
-		    logger.log(Level.SEVERE, "Could not write into file : "+ fileName.getAbsolutePath());
+		    if(LOGGER.isLoggable(Level.SEVERE)){
+			LOGGER.log(Level.SEVERE, "Could not write into file : "+ file.getAbsolutePath());
+		   }
 		}
 		
+	}
+	/**
+	 * 
+	 * @return
+	 */
+	public WebCrawler getWebCrawler() {
+		return webCrawler;
+	}
+	/**
+	 * 
+	 * @return
+	 */
+	public FileManager getFileManager() {
+		return fileManager;
+	}
+	/**
+	 * 
+	 * @return
+	 */
+	public Logger getLogger() {
+		return LOGGER;
 	}
 
 }
